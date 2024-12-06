@@ -10,41 +10,55 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- *
+ * The Game class manages the flow of an UNO game, including initialization,
+ * gameplay, player turns, and determining the winner.
+ * It handles special card effects, player actions, and game termination conditions.
+ * 
  * @author Dell
  */
-
 class Game {
-    private Deck deck;
-    private List<Player> players;
-    private Card topCard;
-    private int currentPlayerIndex;
-    private boolean isReversed;
+    private Deck deck; // The deck of UNO cards used in the game
+    private List<Player> players; // List of players participating in the game
+    private Card topCard; // The current top card in play
+    private int currentPlayerIndex; // Index of the player whose turn it is
+    private boolean isReversed; // Flag to indicate if the turn order is reversed
 
+    /**
+     * Constructor for the Game class.
+     * Initializes the game with the specified player names, deals cards,
+     * and sets the initial top card.
+     * 
+     * @param playerNames List of player names
+     */
     public Game(List<String> playerNames) {
         deck = new Deck();
         players = new ArrayList<>();
+
+        // Initialize players and deal 7 cards to each
         for (String name : playerNames) {
             players.add(new Player(name));
         }
         currentPlayerIndex = 0;
         isReversed = false;
 
-        // Deal 7 cards to each player
         for (Player player : players) {
             for (int i = 0; i < 7; i++) {
                 player.drawCard(deck);
             }
         }
 
-        // Set the first card
+        // Draw the initial top card, ensuring it's not a Wild card
         topCard = deck.drawCard();
-        while (topCard.getColor().equals("Wild")) { // Ensure the first card is not a Wild card
+        while (topCard.getColor().equals("Wild")) {
             deck.shuffle();
             topCard = deck.drawCard();
         }
     }
 
+    /**
+     * Starts and manages the gameplay loop until a winner is determined
+     * or the deck runs out of cards.
+     */
     public void play() {
         Scanner scanner = new Scanner(System.in);
         Player winner = null;
@@ -79,15 +93,15 @@ class Game {
                     int index = Integer.parseInt(input);
                     Card chosenCard = currentPlayer.getHand().get(index);
 
-                    // Validate card
+                    // Validate if the chosen card matches the top card
                     if (chosenCard.getColor().equals(topCard.getColor()) ||
-                            chosenCard.getValue().equals(topCard.getValue()) ||
-                            chosenCard.getColor().equals("Wild")) {
+                        chosenCard.getValue().equals(topCard.getValue()) ||
+                        chosenCard.getColor().equals("Wild")) {
 
                         currentPlayer.playCard(chosenCard);
                         topCard = chosenCard;
 
-                        // Apply special card effects
+                        // Handle special card effects
                         if (topCard.getValue().equals("Reverse")) {
                             isReversed = !isReversed;
                         } else if (topCard.getValue().equals("Skip")) {
@@ -106,7 +120,7 @@ class Game {
                 }
             }
 
-            // Check for win condition
+            // Check if the current player has won
             if (currentPlayer.getHand().isEmpty()) {
                 winner = currentPlayer;
             }
@@ -115,6 +129,7 @@ class Game {
             currentPlayerIndex = getNextPlayerIndex();
         }
 
+        // Determine the game outcome
         if (winner != null) {
             System.out.println("\n" + winner.getName() + " wins the game!");
         } else if (deck.size() == 0) {
@@ -124,14 +139,27 @@ class Game {
         determineWinner();
     }
 
+    /**
+     * Determines the index of the next player based on the current direction of play.
+     * 
+     * @return Index of the next player
+     */
     private int getNextPlayerIndex() {
         return (currentPlayerIndex + (isReversed ? -1 : 1) + players.size()) % players.size();
     }
 
+    /**
+     * Retrieves the next player in turn order.
+     * 
+     * @return The next player
+     */
     private Player getNextPlayer() {
         return players.get(getNextPlayerIndex());
     }
 
+    /**
+     * Prints the final standings of the game, sorted by the number of cards remaining.
+     */
     private void printFinalStandings() {
         System.out.println("\nFinal Standings:");
         players.sort(Comparator.comparingInt(Player::getScore));
@@ -140,6 +168,10 @@ class Game {
         }
     }
 
+    /**
+     * Determines the winner(s) based on the number of cards remaining
+     * and handles tie scenarios.
+     */
     private void determineWinner() {
         int minCards = players.stream()
                 .mapToInt(Player::getScore)
